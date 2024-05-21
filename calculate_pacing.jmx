@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jmeterTestPlan version="1.2" properties="5.0" jmeter="5.6.3">
+  <hashTree>
+    <TestFragmentController guiclass="TestFragmentControllerGui" testclass="TestFragmentController" testname="Test Fragment" enabled="false"/>
+    <hashTree>
+      <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="JSR223 Sampler - Calculate Pacing">
+        <stringProp name="cacheKey">true</stringProp>
+        <stringProp name="filename"></stringProp>
+        <stringProp name="parameters"></stringProp>
+        <stringProp name="script">// Define the total number of threads and transactions per hour
+def threadGroup = ctx.getThreadGroup()
+// Get the number of threads from the ThreadGroup
+def totalThreads = threadGroup.getNumThreads()
+// Set TPH required
+def totalTransactionsPerHour = Integer.parseInt(vars.get(&quot;totalTransactionsPerHour&quot;))
+// Calculate the total number of transactions per hour across all threads
+def TransactionsPerHour = totalTransactionsPerHour / totalThreads
+// Calculate the pacing interval in milliseconds
+def pacingIntervalMillis = (3600 * 1000) / TransactionsPerHour
+// Calculate the start time of the current transaction
+long transactionStartTime = System.currentTimeMillis()
+// Check if this is not the first iteration
+if (vars.get(&quot;prevTransactionEndTime&quot;) != null) {
+    	// Calculate the transaction duration of the previous transaction
+    	def prevTransactionDuration = transactionStartTime - vars.get(&quot;prevTransactionEndTime&quot;).toLong()    
+    	// Calculate the delay needed to meet the pacing interval
+    	long delay = pacingIntervalMillis - prevTransactionDuration    
+    	// Ensure the delay is not negative
+    	if (delay &gt; 0) {
+    		def multiplier = 0.5 + Math.random()        
+		// Calculate the randomized delay within 50% and 150% of the calculated delay
+		def randomizedDelay = delay * multiplier		
+//		log.info(&quot;delay: &quot; + delay + &quot; | multiplier: &quot; + multiplier + &quot; | Pacing delay: &quot; + randomizedDelay + &quot; | Total Pacing: &quot; + (prevTransactionDuration + randomizedDelay))
+		// Sleep for the randomized delay time
+		Thread.sleep(randomizedDelay.toLong())
+    } else {
+        	log.info(&quot;No pacing delay needed as previous transaction duration exceeds pacing interval&quot;)
+    }
+}
+// Store the end time of the current transaction for pacing calculation in the next iteration
+vars.put(&quot;prevTransactionEndTime&quot;, String.valueOf(System.currentTimeMillis()))
+</stringProp>
+        <stringProp name="scriptLanguage">groovy</stringProp>
+      </JSR223Sampler>
+      <hashTree>
+        <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="JSR223 PostProcessor">
+          <stringProp name="scriptLanguage">groovy</stringProp>
+          <stringProp name="parameters"></stringProp>
+          <stringProp name="filename"></stringProp>
+          <stringProp name="cacheKey">true</stringProp>
+          <stringProp name="script">prev.setIgnore()</stringProp>
+        </JSR223PostProcessor>
+        <hashTree/>
+      </hashTree>
+    </hashTree>
+  </hashTree>
+</jmeterTestPlan>
